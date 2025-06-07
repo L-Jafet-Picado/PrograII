@@ -1,0 +1,36 @@
+import pandas as pd
+from bs4 import BeautifulSoup
+import requests
+import re
+
+# Recolección
+datos_url = "https://www.sportline.cr/hombre/ropa.html?srsltid=AfmBOopo7r0wxMOs7Sg4v9lg1sMI7SQNnhZcy8sMX1waUUWZh97BXXjw"
+html = requests.get(datos_url)
+print("correcto el código: {}".format(html.status_code))
+
+soup = BeautifulSoup(html.text, "lxml")
+productos = soup.find_all('div', class_="product-item-info")
+
+lista_prenda = []
+lista_precios = []
+
+for producto in productos:
+    nombreproducto = producto.find('a', class_="product-item-link")
+    precioproducto = producto.find('span', class_="price")
+    
+    if nombreproducto and precioproducto:
+        lista_prenda.append(nombreproducto.text)
+        
+        # Limpiar el texto del precio y extraer solo el número
+        precio_texto = precioproducto.text.replace('₡', '').replace(',', '').replace('\xa0', '').strip()
+        
+        # Usar expresión regular para obtener solo el primer número
+        precio = re.findall(r'\d+', precio_texto)
+        
+        if precio:
+            lista_precios.append(precio[0])  # Solo agregar el primer número encontrado
+
+df = pd.DataFrame({"Nombre": lista_prenda, "Precio": lista_precios})
+df.to_csv(r"ropa.csv", encoding="utf-8-sig", index=False)
+print("Datos generados correctamente")
+print(df)
